@@ -32,6 +32,8 @@ const {
   getAllPendingMerchants,
   getMerchant,
   WALLET_BEP20,
+  WALLET_BEP20_OLD,
+  WALLET_TRC20,
   PRICE_MONTH_USDT,
   PRICE_WEEK_USDT,
 } = require('./db-helpers');
@@ -146,7 +148,8 @@ bot.on('message', async (msg) => {
       await bot.sendMessage(
         chatId,
         '💳 *Оплата подписки*\n\n' +
-        `Сеть: *BEP20*\nАдрес кошелька:\n\`${WALLET_BEP20}\`\n\n` +
+        `*BEP20 (BSC):*\n\`${WALLET_BEP20}\`\n\`${WALLET_BEP20_OLD}\`\n\n` +
+        `*TRC20 (TRON):*\n\`${WALLET_TRC20}\`\n\n` +
         'Тарифы:\n' +
         `• Неделя — *${PRICE_WEEK_USDT} USDT*\n` +
         `• Месяц — *${PRICE_MONTH_USDT} USDT*\n\n` +
@@ -647,7 +650,8 @@ bot.on('callback_query', async (query) => {
   if (data === 'subscription') {
     const subText =
       '💳 *Подписка*\n\n' +
-      `Сеть: *BEP20 (BSC)*\nАдрес:\n\`${WALLET_BEP20}\`\n\n` +
+      `*BEP20 (BSC):*\n\`${WALLET_BEP20}\`\n\`${WALLET_BEP20_OLD}\`\n\n` +
+      `*TRC20 (TRON):*\n\`${WALLET_TRC20}\`\n\n` +
       `• Неделя — *${PRICE_WEEK_USDT} USDT*\n` +
       `• Месяц — *${PRICE_MONTH_USDT} USDT*\n\n` +
       'После перевода отправьте команду /paid и укажите хэш транзакции или приложите скрин.';

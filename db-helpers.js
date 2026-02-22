@@ -1,8 +1,10 @@
 const { getDb } = require('./db');
 
-const WALLET_BEP20 = '0x37c62127256469c559d07c0d314463e28c2aef69';
-const PRICE_MONTH_USDT = 15;
-const PRICE_WEEK_USDT = 5;
+const WALLET_BEP20 = '0xf7b660bb0f21cca0564c9ceda3b06c6f56c3f28c';
+const WALLET_BEP20_OLD = '0x37c62127256469c559d07c0d314463e28c2aef69';
+const WALLET_TRC20 = 'TGGPiHydnffqHWWiQwjD9ViYHN26DH4r44';
+const PRICE_MONTH_USDT = 5;
+const PRICE_WEEK_USDT = 2;
 
 function ensureUser(userId) {
   const db = getDb();
@@ -466,6 +468,8 @@ function getMerchant(id) {
 
 module.exports = {
   WALLET_BEP20,
+  WALLET_BEP20_OLD,
+  WALLET_TRC20,
   PRICE_MONTH_USDT,
   PRICE_WEEK_USDT,
   normalizePhone,
