@@ -57,6 +57,17 @@ const bot = new TelegramBot(BOT_TOKEN, {
   },
 });
 
+// Чтобы бот не падал при ошибках Telegram API (сеть, токен и т.д.)
+bot.on('polling_error', (err) => {
+  console.error('[polling_error]', err.message || err);
+});
+bot.on('error', (err) => {
+  console.error('[bot error]', err.message || err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[unhandledRejection]', reason);
+});
+
 const userState = new Map();
 
 function setState(userId, state, data = {}) {
@@ -118,6 +129,7 @@ function getAdminIds() {
 }
 
 bot.on('message', async (msg) => {
+  if (!msg.from) return;
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const text = (msg.text || '').trim();
@@ -125,17 +137,26 @@ bot.on('message', async (msg) => {
   ensureUser(userId);
 
   const showMainMenu = async () => {
-    await bot.sendMessage(
-      chatId,
-      '👋 Добро пожаловать в *CoinEX_SkamerList*.\n\n' +
-      'Здесь можно:\n' +
-      '• Проверить контакт по номеру или нику — есть ли он в списке скамеров\n' +
-      '• Отправить заявку на добавление нового скамера (без ограничений)\n' +
-      '• Оформить подписку для неограниченных проверок\n\n' +
-      'Выберите действие:',
-      { parse_mode: 'Markdown', ...mainMenu() }
-    );
-    await bot.sendMessage(chatId, '⬇️ Главное меню', mainMenuReplyKeyboard());
+    try {
+      await bot.sendMessage(
+        chatId,
+        '👋 Добро пожаловать в CoinEX_SkamerList.\n\n' +
+        'Здесь можно:\n' +
+        '• Проверить контакт по номеру или нику\n' +
+        '• Отправить заявку на добавление скамера\n' +
+        '• Проверить мерчанта, добавить информацию о мерчанте\n' +
+        '• Оформить подписку\n\n' +
+        'Выберите действие:',
+        mainMenu()
+      );
+    } catch (e) {
+      console.error('[showMainMenu]', e.message);
+    }
+    try {
+      await bot.sendMessage(chatId, '⬇️ Главное меню', mainMenuReplyKeyboard());
+    } catch (e) {
+      console.error('[showMainMenu keyboard]', e.message);
+    }
   };
 
   if (text === '/start' || text === MAIN_MENU_BUTTON || text === 'Главное меню') {
