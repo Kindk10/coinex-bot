@@ -416,6 +416,76 @@ bot.on('message', async (msg) => {
     return;
   }
 
+  // Если состояния нет (сессия закрыта, бот перезапущен) — всё равно выполняем поиск по тексту (2+ символов)
+  if (text && !state && !text.startsWith('/') && text.trim().length >= 2) {
+    const input = text.trim();
+    const { ok, used, limit } = canMakeCheck(userId);
+    if (!ok) {
+      await bot.sendMessage(
+        chatId,
+        `❌ Лимит бесплатных проверок (${used}/${limit}). Оформите подписку.`,
+        mainMenu()
+      );
+      return;
+    }
+    recordCheck(userId);
+    // Проверка по скамерам
+    let list = [];
+    try {
+      list = findScammer(input, input, input);
+    } catch (e) {
+      console.error('[check fallback] findScammer:', e.message);
+    }
+    if (list.length > 0) {
+      const buildReply = (s) => {
+        const parts = [s.phone, s.username, s.full_name].filter(Boolean);
+        let r = '⚠️ Найдено в списке скамеров:\n\n• ' + (parts.join(' / ') || '—') + '\n';
+        if (s.description) r += '\n' + String(s.description).substring(0, 900);
+        if (s.photo_import_path && !(s.photo_file_id || '').trim()) r += '\n(есть фото в экспорте)';
+        return r.substring(0, 1024);
+      };
+      for (const s of list) {
+        const replyText = buildReply(s);
+        const photoFileId = (s.photo_file_id || '').trim();
+        let sent = false;
+        if (photoFileId) {
+          try {
+            await bot.sendPhoto(chatId, photoFileId, { caption: replyText.substring(0, 1024), reply_markup: mainMenu().reply_markup });
+            sent = true;
+          } catch (e) {
+            console.error('[check fallback] sendPhoto:', e.message);
+          }
+        }
+        if (!sent) await bot.sendMessage(chatId, replyText, mainMenu());
+      }
+      return;
+    }
+    // Проверка по мерчантам
+    const exact = findMerchant(input);
+    const byPartial = findMerchantByPartial(input);
+    if (exact) {
+      const m = exact;
+      const replyText = `🛒 Мерчант: ${(m.nickname || m.tag || '—').replace(/\*/g, '')}\n\n${(m.description || 'Описание отсутствует.').replace(/\*/g, '')}`;
+      if ((m.photo_file_id || '').trim()) {
+        try {
+          await bot.sendPhoto(chatId, m.photo_file_id.trim(), { caption: replyText, reply_markup: mainMenu().reply_markup });
+        } catch (e) {
+          await bot.sendMessage(chatId, replyText, mainMenu());
+        }
+      } else {
+        await bot.sendMessage(chatId, replyText, mainMenu());
+      }
+      return;
+    }
+    if (byPartial && byPartial.length > 0) {
+      const lines = byPartial.slice(0, 5).map((m) => `• ${(m.nickname || m.tag || '—').replace(/\*/g, '')}: ${(m.description || '').slice(0, 80)}`);
+      await bot.sendMessage(chatId, `Найдено по запросу:\n\n${lines.join('\n')}\n\nВведите точный ник для полного описания.`, mainMenu());
+      return;
+    }
+    await bot.sendMessage(chatId, 'По запросу в базе ничего не найдено. Выберите действие в меню:', mainMenu());
+    return;
+  }
+
   if (text && !state && !text.startsWith('/')) {
     await bot.sendMessage(chatId, 'Выберите действие в меню:', mainMenu());
   }
