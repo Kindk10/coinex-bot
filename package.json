@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "init-db": "node scripts/init-db.js",
-    "import-scammers": "node scripts/import-scammers.js"
+    "import-scammers": "node scripts/import-scammers.js",
+    "backfill-photos": "node scripts/backfill-photo-file-ids.js"
   },
   "keywords": ["telegram", "bot", "scammer", "coinex"],
   "license": "MIT",

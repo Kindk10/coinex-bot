@@ -270,28 +270,30 @@ bot.on('message', async (msg) => {
     for (const s of list) {
       const replyText = buildReply(s);
       let sent = false;
-      
-      if (s.photo_file_id) {
+      const photoFileId = (s.photo_file_id || '').trim();
+      const photoImportPath = s.photo_import_path;
+
+      if (photoFileId) {
         try {
-          await bot.sendPhoto(chatId, s.photo_file_id, {
-            caption: replyText,
+          await bot.sendPhoto(chatId, photoFileId, {
+            caption: replyText.substring(0, 1024),
             reply_markup: mainMenu().reply_markup
           });
           sent = true;
         } catch (e) {
-          console.error(`[check] sendPhoto file_id:`, e.message);
+          console.error(`[check] sendPhoto file_id scammer id=${s.id}:`, e.message);
         }
       }
-      
-      if (!sent && s.photo_import_path) {
+
+      if (!sent && photoImportPath) {
         const fs = require('fs');
         const path = require('path');
         const exportBasePath = process.env.EXPORT_BASE_PATH || 'c:\\Users\\dkk150607\\Downloads\\Telegram Desktop\\ChatExport_2026-02-22';
-        const photoPath = path.isAbsolute(s.photo_import_path) ? s.photo_import_path : path.join(exportBasePath, s.photo_import_path);
+        const photoPath = path.isAbsolute(photoImportPath) ? photoImportPath : path.join(exportBasePath, photoImportPath);
         if (fs.existsSync(photoPath)) {
           try {
             await bot.sendPhoto(chatId, fs.createReadStream(photoPath), {
-              caption: replyText,
+              caption: replyText.substring(0, 1024),
               reply_markup: mainMenu().reply_markup
             });
             sent = true;
@@ -300,7 +302,7 @@ bot.on('message', async (msg) => {
           }
         }
       }
-      
+
       if (!sent) {
         await bot.sendMessage(chatId, replyText, mainMenu());
       }
@@ -860,6 +862,8 @@ bot.on('message', async (msg) => {
   if (text === '/stats') {
     const db = require('./db').getDb();
     const scammers = db.prepare('SELECT COUNT(*) as c FROM scammers').get();
+    const withPhotoId = db.prepare('SELECT COUNT(*) as c FROM scammers WHERE photo_file_id IS NOT NULL AND TRIM(photo_file_id) != \'\'').get();
+    const withPhotoPathOnly = db.prepare('SELECT COUNT(*) as c FROM scammers WHERE (photo_file_id IS NULL OR TRIM(photo_file_id) = \'\') AND photo_import_path IS NOT NULL').get();
     const pendingS = db.prepare('SELECT COUNT(*) as c FROM pending_scammers WHERE status = ?').get('pending');
     const pendingP = db.prepare('SELECT COUNT(*) as c FROM payments WHERE status = ?').get('pending');
     const merchants = db.prepare('SELECT COUNT(*) as c FROM merchants').get();
@@ -868,8 +872,8 @@ bot.on('message', async (msg) => {
     db.close();
     await bot.sendMessage(
       msg.chat.id,
-      `📊 Скамеров: ${scammers.c} | Заявок скамеров: ${pendingS.c}\n` +
-      `Ожидают оплаты: ${pendingP.c}\n` +
+      `📊 Скамеров: ${scammers.c} (с photo_file_id: ${withPhotoId.c}, только путь: ${withPhotoPathOnly.c})\n` +
+      `Заявок скамеров: ${pendingS.c} | Ожидают оплаты: ${pendingP.c}\n` +
       `Мерчантов: ${merchants.c} | В топе: ${topM.c} | Заявок мерчантов: ${pendingM.c}`
     );
     return;
